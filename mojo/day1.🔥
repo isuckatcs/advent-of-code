@@ -1,0 +1,82 @@
+from python import Python
+
+
+fn assignFirstLast(inout first: Int, inout last: Int, val: Int):
+    if first == -1:
+        first = val
+    else:
+        last = val
+
+
+fn part1(line: String) -> Int:
+    var first = -1
+    var last = -1
+
+    for i in range(len(line)):
+        let asciiVal = ord(line[i])
+
+        if isdigit(asciiVal):
+            assignFirstLast(first, last, asciiVal - ord("0"))
+
+    if last == -1:
+        last = first
+
+    return 10 * first + last
+
+
+fn getKeywordValue(s: String) -> Int:
+    if s == "one":
+        return 1
+    if s == "two":
+        return 2
+    if s == "three":
+        return 3
+    if s == "four":
+        return 4
+    if s == "five":
+        return 5
+    if s == "six":
+        return 6
+    if s == "seven":
+        return 7
+    if s == "eight":
+        return 8
+    if s == "nine":
+        return 9
+    return -1
+
+
+fn part2(line: String) -> Int:
+    var first = -1
+    var last = -1
+
+    for i in range(len(line)):
+        let asciiVal = ord(line[i])
+
+        if isdigit(asciiVal):
+            assignFirstLast(first, last, asciiVal - ord("0"))
+            continue
+
+        for n in range(3, 6):
+            let keywordVal = getKeywordValue(line[i : i + n])
+            if keywordVal != -1:
+                assignFirstLast(first, last, keywordVal)
+
+    if last == -1:
+        last = first
+
+    return 10 * first + last
+
+
+def main():
+    var py = Python()
+    let sys = py.import_module("sys")
+
+    var part1Sum = 0
+    var part2Sum = 0
+    for line in sys.stdin:
+        part1Sum += part1(py.__str__(line))
+        part2Sum += part2(py.__str__(line))
+
+    print(part1Sum)
+    print(part2Sum)
