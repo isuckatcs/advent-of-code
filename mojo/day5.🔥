@@ -1,0 +1,129 @@
+from math import min, max
+from math.limit import max_finite
+from python import Python
+from utils.vector import DynamicVector
+
+
+fn part1(input: String) raises -> Int:
+    var lines = input.split("\n")
+
+    # this is hack to trigger the processing of the last map
+    lines.append("placeholder")
+
+    let seedsStr = lines[0].split(": ")[1].split(" ")
+
+    var seeds = DynamicVector[Int]()
+    for i in range(0, seedsStr.size):
+        seeds.append(atol(seedsStr[i]))
+
+    var map = DynamicVector[Int]()
+    for i in range(3, lines.size):
+        if len(lines[i]) == 0:
+            continue
+
+        let splitStr = lines[i].split(" ")
+        if splitStr.size != 3:
+            # reached the end of a map
+            var newSeeds = DynamicVector[Int]()
+            for j in range(0, seeds.size):
+                for k in range(0, map.size, 3):
+                    let dst = map[k]
+                    let src = map[k + 1]
+                    let l = map[k + 2]
+
+                    if seeds[j] >= src and seeds[j] < src + l:
+                        newSeeds.append(dst + seeds[j] - src)
+                        break
+                else:
+                    newSeeds.append(seeds[j])
+            seeds = newSeeds
+            map.clear()
+            continue
+
+        map.append(atol(splitStr[0]))
+        map.append(atol(splitStr[1]))
+        map.append(atol(splitStr[2]))
+
+    var m: Int = seeds[0]
+    for i in range(1, seeds.size):
+        m = min(m, seeds[i])
+
+    return m
+
+
+@value
+@register_passable
+struct Range(CollectionElement):
+    var b: Int
+    var e: Int
+
+
+fn part2(input: String) raises -> Int:
+    var lines = input.split("\n")
+
+    # this is hack to trigger the processing of the last map
+    lines.append("placeholder")
+
+    let seedsStr = lines[0].split(": ")[1].split(" ")
+
+    var seeds = DynamicVector[Range]()
+    for i in range(0, seedsStr.size, 2):
+        let b = atol(seedsStr[i])
+        let l = atol(seedsStr[i + 1])
+        seeds.append(Range(b, b + l))
+
+    var map = DynamicVector[Int]()
+    for i in range(3, lines.size):
+        if len(lines[i]) == 0:
+            continue
+
+        let splitStr = lines[i].split(" ")
+        if splitStr.size != 3:
+            # reached the end of a map
+            var newSeeds = DynamicVector[Range]()
+            while seeds.size != 0:
+                let r = seeds.pop_back()
+
+                for k in range(0, map.size, 3):
+                    let dst = map[k]
+                    let mb = map[k + 1]
+                    let me = mb + map[k + 2]
+
+                    let ib = max(r.b, mb)
+                    let ie = min(r.e, me)
+
+                    if ib >= ie:
+                        continue
+
+                    newSeeds.append(Range(ib + dst - mb, ie + dst - mb))
+                    if r.b < ib:
+                        seeds.append(Range(r.b, ib))
+                    if r.e > ie:
+                        seeds.append(Range(ie, r.e))
+
+                    break
+                else:
+                    newSeeds.append(r)
+            seeds = newSeeds
+            map.clear()
+            continue
+
+        map.append(atol(splitStr[0]))
+        map.append(atol(splitStr[1]))
+        map.append(atol(splitStr[2]))
+
+    var m = seeds[0].b
+    for i in range(1, seeds.size):
+        m = min(m, seeds[i].b)
+
+    return m
+
+
+fn main() raises:
+    let py = Python()
+    let sys = py.import_module("sys")
+
+    let input = sys.stdin.read().__str__()
+
+    print(part1(input))
+    print(part2(input))
