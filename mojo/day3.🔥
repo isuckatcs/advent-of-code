@@ -4,7 +4,7 @@ from python import Python
 
 @value
 @register_passable
-struct Number:
+struct Number(CollectionElement):
     var line: Int
     var begin: Int
     var end: Int
@@ -13,26 +13,28 @@ struct Number:
 
 @value
 @register_passable
-struct Symbol:
+struct Symbol(CollectionElement):
     var row: Int
     var col: Int
 
 
 fn part1(inout lines: PythonObject) raises -> Int:
+    var py = Python()
     var symbols = DynamicVector[Symbol]()
     var numbers = DynamicVector[Number]()
 
     var li = 0
     for line in lines:
         var ci = 0
-        let lineLen = len(line.to_string())
+        let lineLen = len(py.__str__(line))
         while ci < lineLen:
-            if isdigit(ord(line[ci].to_string())):
+            if isdigit(ord(py.__str__(line[ci]))):
                 let b = ci
-                while ci < lineLen and isdigit(ord(line[ci].to_string())):
+                while ci < lineLen and isdigit(ord(py.__str__(line[ci]))):
                     ci += 1
 
-                let val = atol(line.to_string()[b:ci])
+                let str: String = py.__str__(line)
+                let val = atol(str[b:ci])
                 numbers.push_back(Number(li, b, ci - 1, val))
                 continue
 
@@ -65,20 +67,22 @@ fn part1(inout lines: PythonObject) raises -> Int:
 
 
 fn part2(inout lines: PythonObject) raises -> Int:
+    var py = Python()
     var symbols = DynamicVector[Symbol]()
     var numbers = DynamicVector[Number]()
 
     var li = 0
     for line in lines:
         var ci = 0
-        let lineLen = len(line.to_string())
+        let lineLen = len(py.__str__(line))
         while ci < lineLen:
-            if isdigit(ord(line[ci].to_string())):
+            if isdigit(ord(py.__str__(line[ci]))):
                 let b = ci
-                while ci < lineLen and isdigit(ord(line[ci].to_string())):
+                while ci < lineLen and isdigit(ord(py.__str__(line[ci]))):
                     ci += 1
 
-                let val = atol(line.to_string()[b:ci])
+                let str: String = py.__str__(line)
+                let val = atol(str[b:ci])
                 numbers.push_back(Number(li, b, ci - 1, val))
                 continue
 
@@ -115,7 +119,7 @@ fn part2(inout lines: PythonObject) raises -> Int:
 
 
 fn main() raises:
-    var py = Python()
+    let py = Python()
     let sys = py.import_module("sys")
 
     var lines = PythonObject([])
