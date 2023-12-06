@@ -1,0 +1,72 @@
+from math import min, max
+from math.limit import max_finite
+from python import Python
+from utils.vector import DynamicVector
+
+
+fn part1(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    var times = DynamicVector[Int]()
+    var distances = DynamicVector[Int]()
+
+    let timeStrs = lines[0].split(":")[1].split(" ")
+    for i in range(0, len(timeStrs)):
+        if len(timeStrs[i]) > 0:
+            times.append(atol(timeStrs[i]))
+
+    let distStrs = lines[1].split(":")[1].split(" ")
+    for i in range(0, len(distStrs)):
+        if len(distStrs[i]) > 0:
+            distances.append(atol(distStrs[i]))
+
+    var out = 1
+    for i in range(0, len(times)):
+        var cnt = 0
+        let t = times[i]
+        let d = distances[i]
+
+        for j in range(0, t + 1):
+            if (t - j) * j > d:
+                cnt += 1
+
+        out *= cnt
+
+    return out
+
+
+fn part2(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    var filteredTimeStr = String()
+    var filteredDistanceStr = String()
+
+    let timeStrs = lines[0].split(":")[1].split(" ")
+    for i in range(0, len(timeStrs)):
+        if len(timeStrs[i]) > 0:
+            filteredTimeStr += timeStrs[i]
+
+    let distStrs = lines[1].split(":")[1].split(" ")
+    for i in range(0, len(distStrs)):
+        if len(distStrs[i]) > 0:
+            filteredDistanceStr += distStrs[i]
+
+    var out = 0
+    let t = atol(filteredTimeStr)
+    let d = atol(filteredDistanceStr)
+
+    for j in range(0, t + 1):
+        if (t - j) * j > d:
+            out += 1
+
+    return out
+
+
+fn main() raises:
+    let py = Python()
+    let sys = py.import_module("sys")
+
+    let input = sys.stdin.read().__str__()
+
+    print(part1(input))
+    print(part2(input))
