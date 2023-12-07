@@ -1,0 +1,175 @@
+from python import Python
+from utils.vector import DynamicVector
+from utils.vector import InlinedFixedVector
+from algorithm.sort import sort
+
+
+@value
+struct Hand(CollectionElement, Stringable):
+    var kind: Int
+    var value: Int
+    var str: String
+
+    fn __str__(self) -> String:
+        return "(" + str(self.kind) + ", " + str(self.value) + ", " + self.str + ")"
+
+
+fn handLess(a: Hand, b: Hand, cards: String) -> Bool:
+    if a.kind == b.kind:
+        var i = 0
+        while i < len(a.str) and a.str[i] == b.str[i]:
+            i += 1
+
+        return cards.rfind(a.str[i]) < cards.rfind(b.str[i])
+
+    return a.kind < b.kind
+
+
+fn part1(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    let cards = String("23456789TJQKA")
+    var hands = DynamicVector[Hand]()
+
+    for i in range(0, len(lines)):
+        if len(lines[i]) == 0:
+            continue
+
+        let split = lines[i].split(" ")
+
+        var cnt = DynamicVector[Int]()
+        cnt.resize(13, 0)
+
+        for j in range(0, len(split[0])):
+            cnt[cards.rfind(split[0][j])] += 1
+
+        sort(cnt)
+
+        var filteredCnt = DynamicVector[Int]()
+        for j in range(len(cnt) - 1, -1, -1):
+            if cnt[j] != 0:
+                filteredCnt.push_back(cnt[j])
+
+        let kind: Int
+        if filteredCnt[0] == 5:
+            kind = 6
+        elif filteredCnt[0] == 4:
+            kind = 5
+        elif filteredCnt[0] == 3 and filteredCnt[1] == 2:
+            kind = 4
+        elif filteredCnt[0] == 3:
+            kind = 3
+        elif filteredCnt[0] == 2 and filteredCnt[1] == 2:
+            kind = 2
+        elif filteredCnt[0] == 2:
+            kind = 1
+        else:
+            kind = 0
+
+        hands.append(Hand(kind, atol(split[1]), split[0]))
+
+    for i in range(0, len(hands)):
+        for j in range(0, len(hands) - 1):
+            if handLess(hands[j + 1], hands[j], cards):
+                let tmp = hands[j + 1]
+                hands[j + 1] = hands[j]
+                hands[j] = tmp
+
+    var sum = 0
+    for i in range(0, len(hands)):
+        sum += (i + 1) * hands[i].value
+
+    return sum
+
+
+fn part2(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    let cards = String("J23456789TQKA")
+    var hands = DynamicVector[Hand]()
+
+    for i in range(0, len(lines)):
+        if len(lines[i]) == 0:
+            continue
+
+        let split = lines[i].split(" ")
+
+        var jokers = 0
+        var removedJokers = String()
+        for j in range(0, len(split[0])):
+            if split[0][j] == "J":
+                jokers += 1
+                continue
+
+            removedJokers += split[0][j]
+
+        var cnt = DynamicVector[Int]()
+        cnt.resize(13, 0)
+
+        for j in range(0, len(removedJokers)):
+            cnt[cards.rfind(removedJokers[j])] += 1
+
+        sort(cnt)
+
+        var filteredCnt = DynamicVector[Int]()
+        for j in range(len(cnt) - 1, -1, -1):
+            if cnt[j] != 0:
+                filteredCnt.push_back(cnt[j])
+
+        let kind: Int
+        if (
+            jokers == 5
+            or filteredCnt[0] == 5
+            or (jokers == 1 and filteredCnt[0] == 4)
+            or jokers == 4
+            or (jokers == 3 and filteredCnt[0] == 2)
+            or (jokers == 2 and filteredCnt[0] == 3)
+        ):
+            kind = 6
+        elif (
+            filteredCnt[0] == 4
+            or (jokers == 1 and filteredCnt[0] == 3)
+            or (jokers == 3 and filteredCnt[0] == 1)
+            or (jokers == 2 and filteredCnt[0] == 2)
+        ):
+            kind = 5
+        elif (filteredCnt[0] == 3 and filteredCnt[1] == 2) or (
+            jokers == 1 and filteredCnt[0] == 2 and filteredCnt[1] == 2
+        ):
+            kind = 4
+        elif (
+            filteredCnt[0] == 3
+            or (jokers == 1 and filteredCnt[0] == 2)
+            or (jokers == 2 and filteredCnt[0] == 1)
+        ):
+            kind = 3
+        elif filteredCnt[0] == 2 and filteredCnt[1] == 2:
+            kind = 2
+        elif filteredCnt[0] == 2 or (jokers == 1 and filteredCnt[0] == 1):
+            kind = 1
+        else:
+            kind = 0
+
+        hands.append(Hand(kind, atol(split[1]), split[0]))
+
+    for i in range(0, len(hands)):
+        for j in range(0, len(hands) - 1):
+            if handLess(hands[j + 1], hands[j], cards):
+                let tmp = hands[j + 1]
+                hands[j + 1] = hands[j]
+                hands[j] = tmp
+
+    var sum = 0
+    for i in range(0, len(hands)):
+        sum += (i + 1) * hands[i].value
+
+    return sum
+
+
+fn main() raises:
+    let input: String
+    with open("/dev/stdin", "r") as stdin:
+        input = stdin.read()
+
+    print(part1(input))
+    print(part2(input))
