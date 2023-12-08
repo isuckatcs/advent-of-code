@@ -1,0 +1,101 @@
+from utils.vector import DynamicVector
+from math import lcm
+
+
+@value
+struct Pair(CollectionElement, Stringable):
+    var a: String
+    var b: String
+
+    fn __str__(self) -> String:
+        return "(" + str(self.a) + ", " + str(self.b) + ")"
+
+
+fn part1(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    var nodes = DynamicVector[String]()
+    var paths = DynamicVector[Pair]()
+
+    for i in range(2, len(lines)):
+        if len(lines[i]) == 0:
+            continue
+
+        let split = lines[i].split(" = ")
+        let lr = split[1].split(", ")
+
+        nodes.append(split[0])
+        paths.append(Pair(lr[0][1:], lr[1][:-1]))
+
+    var node: String = "AAA"
+    var i = 0
+    var size = 0
+    while node != "ZZZ":
+        var nodeIdx = -1
+        for i in range(0, len(nodes)):
+            if nodes[i] == node:
+                nodeIdx = i
+                break
+
+        if lines[0][i] == "L":
+            node = paths[nodeIdx].a
+        else:
+            node = paths[nodeIdx].b
+
+        i = (i + 1) % len(lines[0])
+        size += 1
+
+    return size
+
+
+fn part2(input: String) raises -> Int:
+    let lines = input.split("\n")
+
+    var nodes = DynamicVector[String]()
+    var paths = DynamicVector[Pair]()
+    var starts = DynamicVector[String]()
+
+    for i in range(2, len(lines)):
+        if len(lines[i]) == 0:
+            continue
+
+        let split = lines[i].split(" = ")
+        let lr = split[1].split(", ")
+
+        nodes.append(split[0])
+        paths.append(Pair(lr[0][1:], lr[1][:-1]))
+
+        if split[0][2] == "A":
+            starts.append(split[0])
+
+    var out: Int = 1
+    for si in range(0, len(starts)):
+        var node = starts[si]
+        var i = 0
+        var size = 0
+        while node[2] != "Z":
+            var nodeIdx = -1
+            for i in range(0, len(nodes)):
+                if nodes[i] == node:
+                    nodeIdx = i
+                    break
+
+            if lines[0][i] == "L":
+                node = paths[nodeIdx].a
+            else:
+                node = paths[nodeIdx].b
+
+            i = (i + 1) % len(lines[0])
+            size += 1
+        out = lcm(out, size)
+
+    return out
+
+
+fn main() raises:
+    let input: String
+    with open("/dev/stdin", "r") as stdin:
+        input = stdin.read()
+
+    print(part1(input))
+    print(part2(input))
