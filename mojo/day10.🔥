@@ -1,0 +1,206 @@
+from utils.static_tuple import StaticTuple
+from utils.vector import DynamicVector
+
+
+@value
+struct Pair[T: CollectionElement, R: CollectionElement](CollectionElement):
+    var a: T
+    var b: R
+
+
+fn contains(v: DynamicVector[Pair[Int, Int]], elem: Pair[Int, Int]) -> Bool:
+    for i in range(0, len(v)):
+        if v[i].a == elem.a and v[i].b == elem.b:
+            return True
+
+    return False
+
+
+fn part1(grid: DynamicVector[String]) -> Int:
+    var start = Pair(0, 0)
+    for i in range(0, len(grid)):
+        for j in range(0, len(grid[i])):
+            if grid[i][j] == "S":
+                start = Pair(i, j)
+
+    var visited = DynamicVector[Pair[Int, Int]]()
+    var queue = DynamicVector[Pair[Int, Int]]()
+    var qFront = 0
+
+    queue.push_back(start)
+    visited.push_back(start)
+    queue.push_back(Pair(-1, -1))
+
+    var steps = 0
+    while qFront < len(queue):
+        let f = queue[qFront]
+        qFront += 1
+
+        if f.a == -1:
+            steps += 1
+
+            if qFront < len(queue):
+                queue.push_back(Pair(-1, -1))
+
+            continue
+
+        let vr = StaticTuple[4](0, 0, 1, -1)
+        let vc = StaticTuple[4](1, -1, 0, 0)
+        let dst = StaticTuple[4]("-J7", "-FL", "|LJ", "|F7")
+        let org = StaticTuple[4]("S-FL", "S-J7", "S|F7", "S|JL")
+
+        for i in range(0, len(vr)):
+            let tr = f.a + vr[i]
+            let tc = f.b + vc[i]
+
+            let c = grid[f.a][f.b]
+
+            if (
+                tr < 0
+                or tr >= len(grid)
+                or tc < 0
+                or tc >= len(grid[0])
+                or str(org[i]).rfind(c) == -1
+            ):
+                continue
+
+            let p = Pair(tr, tc)
+            if str(dst[i]).rfind(grid[tr][tc]) != -1 and not contains(visited, p):
+                queue.push_back(p)
+                visited.push_back(p)
+
+    return steps - 1
+
+
+fn part2(grid: DynamicVector[String]) -> Int:
+    let vr = StaticTuple[4](0, 0, 1, -1)
+    let vc = StaticTuple[4](1, -1, 0, 0)
+
+    var start = Pair(0, 0)
+    for i in range(0, len(grid)):
+        for j in range(0, len(grid[i])):
+            if grid[i][j] == "S":
+                start = Pair(i, j)
+
+    var visited = DynamicVector[Pair[Int, Int]]()
+    var queue = DynamicVector[Pair[Int, Int]]()
+    var qFront = 0
+
+    queue.push_back(start)
+    visited.push_back(start)
+
+    var startDirs = 0
+    while qFront < len(queue):
+        let f = queue[qFront]
+        qFront += 1
+
+        let dst = StaticTuple[4]("-J7", "-FL", "|LJ", "|F7")
+        let org = StaticTuple[4]("S-FL", "S-J7", "S|F7", "S|JL")
+
+        for i in range(0, len(vr)):
+            let tr = f.a + vr[i]
+            let tc = f.b + vc[i]
+
+            let c = grid[f.a][f.b]
+
+            if (
+                tr < 0
+                or tr >= len(grid)
+                or tc < 0
+                or tc >= len(grid[0])
+                or str(org[i]).rfind(c) == -1
+            ):
+                continue
+
+            let p = Pair(tr, tc)
+            if str(dst[i]).rfind(grid[tr][tc]) != -1 and not contains(visited, p):
+                if c == "S":
+                    startDirs |= 1 << i
+
+                queue.push_back(p)
+                visited.push_back(p)
+
+    var scaledGrid = DynamicVector[String]()
+
+    var s = str("")
+    for i in range(0, len(grid[0]) * 2 + 1):
+        s += "."
+    scaledGrid.push_back(s)
+
+    for i in range(0, len(grid)):
+        s = str(".")
+        for j in range(0, len(grid[i])):
+            if not contains(visited, Pair(i, j)):
+                s += ".."
+                continue
+
+            var c = grid[i][j]
+            if c == "S":
+                if startDirs == 0b0101:
+                    c = "F"
+                elif startDirs == 0b1001:
+                    c = "L"
+                elif startDirs == 0b0110:
+                    c = "7"
+                elif startDirs == 0b1010:
+                    c = "J"
+                elif startDirs == 0b0011:
+                    c = "-"
+                elif startDirs == 0b1100:
+                    c = "|"
+
+            s += c
+            if str("FL-").rfind(c) != -1:
+                s += "-"
+            else:
+                s += "."
+        scaledGrid.push_back(s)
+
+        var s2 = str("")
+        for i in range(0, len(s)):
+            if str("F7|").rfind(s[i]) != -1:
+                s2 += "|"
+            else:
+                s2 += "."
+        scaledGrid.push_back(s2)
+
+    queue.clear()
+    qFront = 0
+    visited.clear()
+
+    queue.push_back(Pair(0, 0))
+    visited.push_back(Pair(0, 0))
+
+    while qFront < len(queue):
+        let f = queue[qFront]
+        qFront += 1
+
+        for i in range(0, len(vr)):
+            let tr = f.a + vr[i]
+            let tc = f.b + vc[i]
+            let c = scaledGrid[f.a][f.b]
+
+            if tr < 0 or tr >= len(scaledGrid) or tc < 0 or tc >= len(scaledGrid[0]):
+                continue
+
+            let p = Pair(tr, tc)
+            if c == "." and not contains(visited, p):
+                queue.push_back(p)
+                visited.push_back(p)
+
+    var cnt = 0
+    for i in range(1, len(scaledGrid), 2):
+        for j in range(1, len(scaledGrid[i]), 2):
+            if not contains(visited, Pair(i, j)) and scaledGrid[i][j] == ".":
+                cnt += 1
+
+    return cnt
+
+
+fn main() raises:
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        print(part1(lines))
+        print(part2(lines))
