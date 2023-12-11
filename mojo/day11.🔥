@@ -1,0 +1,83 @@
+from utils.vector import DynamicVector
+from math import abs, min, max
+
+
+@value
+struct Pair[T: CollectionElement, R: CollectionElement](CollectionElement):
+    var a: T
+    var b: R
+
+
+fn contains(v: DynamicVector[Int], elem: Int) -> Bool:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return True
+
+    return False
+
+
+fn part1(grid: DynamicVector[String]) -> UInt64:
+    var galaxies = DynamicVector[Pair[Int, Int]]()
+    var occupiedRows = DynamicVector[Int]()
+    var occupiedCols = DynamicVector[Int]()
+
+    for i in range(0, len(grid)):
+        for j in range(0, len(grid[0])):
+            if grid[i][j] == "#":
+                galaxies.push_back(Pair(i, j))
+                occupiedRows.push_back(i)
+                occupiedCols.push_back(j)
+
+    var totalDist: UInt64 = 0
+    for i in range(0, len(galaxies)):
+        for j in range(i + 1, len(galaxies)):
+            let g1 = galaxies[i]
+            let g2 = galaxies[j]
+
+            var dist = abs(g1.a - g2.a) + abs(g1.b - g2.b)
+            for k in range(min(g1.a, g2.a), max(g1.a, g2.a)):
+                if not contains(occupiedRows, k):
+                    dist += 1
+            for k in range(min(g1.b, g2.b), max(g1.b, g2.b)):
+                if not contains(occupiedCols, k):
+                    dist += 1
+            totalDist += dist
+    return totalDist
+
+
+fn part2(grid: DynamicVector[String]) -> UInt64:
+    var galaxies = DynamicVector[Pair[Int, Int]]()
+    var occupiedRows = DynamicVector[Int]()
+    var occupiedCols = DynamicVector[Int]()
+
+    for i in range(0, len(grid)):
+        for j in range(0, len(grid[0])):
+            if grid[i][j] == "#":
+                galaxies.push_back(Pair(i, j))
+                occupiedRows.push_back(i)
+                occupiedCols.push_back(j)
+
+    var totalDist: UInt64 = 0
+    for i in range(0, len(galaxies)):
+        for j in range(i + 1, len(galaxies)):
+            let g1 = galaxies[i]
+            let g2 = galaxies[j]
+
+            var dist = abs(g1.a - g2.a) + abs(g1.b - g2.b)
+            for k in range(min(g1.a, g2.a), max(g1.a, g2.a)):
+                if not contains(occupiedRows, k):
+                    dist += 1000000 - 1
+            for k in range(min(g1.b, g2.b), max(g1.b, g2.b)):
+                if not contains(occupiedCols, k):
+                    dist += 1000000 - 1
+            totalDist += dist
+    return totalDist
+
+
+fn main() raises:
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        print(part1(lines))
+        print(part2(lines))
