@@ -1,0 +1,131 @@
+from utils.vector import DynamicVector
+
+
+struct DynamicVectorWrapper[T: CollectionElement](CollectionElement):
+    var v: DynamicVector[T]
+
+    fn __init__(inout self):
+        self.v = DynamicVector[T]()
+
+    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
+        self.v.__copyinit__(existing.v)
+
+    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
+        self.v.__moveinit__(existing.v)
+
+    fn __getitem__(self, i: Int) -> T:
+        return self.v[i]
+
+    fn __setitem__(inout self, i: Int, e: T):
+        self.v[i] = e
+
+    fn push_back(inout self, value: T):
+        self.v.push_back(value)
+
+
+fn memo(springs: String, groups: DynamicVector[Int]) -> Int64:
+    var cache = DynamicVector[DynamicVectorWrapper[Int64]]()
+    cache.resize(len(springs), DynamicVectorWrapper[Int64]())
+    for i in range(0, len(springs)):
+        cache[i].v.resize(len(groups), -1)
+
+    return dp(springs, groups, cache)
+
+
+fn dp(
+    springs: String,
+    groups: DynamicVector[Int],
+    inout cache: DynamicVector[DynamicVectorWrapper[Int64]],
+    li: Int = 0,
+    gi: Int = 0,
+) -> Int64:
+    if li >= len(springs):
+        return gi == len(groups)
+
+    if gi < len(groups) and cache[li][gi] != -1:
+        return cache[li][gi]
+
+    var i = li
+    while i < len(springs):
+        if springs[i] == ".":
+            i += 1
+            continue
+
+        if gi == len(groups):
+            if springs[i] == "#":
+                return 0
+
+            i += 1
+            continue
+
+        let base = i
+        while i < len(springs) and (springs[i] == "?" or springs[i] == "#"):
+            i += 1
+
+        let next = groups[gi]
+
+        var replaced: Int64 = 0
+        var skipped: Int64 = 0
+
+        if i - base >= next and (
+            base + next == len(springs) or springs[base + next] != "#"
+        ):
+            replaced = dp(springs, groups, cache, base + 1 + next, gi + 1)
+
+        if springs[base] == "?":
+            skipped = dp(springs, groups, cache, base + 1, gi)
+
+        cache[li][gi] = replaced + skipped
+        return replaced + skipped
+
+    return gi == len(groups)
+
+
+fn part1(line: String) raises -> Int64:
+    let split = line.split(" ")
+
+    let springs = split[0]
+    let groups = split[1].split(",")
+
+    var nums = DynamicVector[Int]()
+    for i in range(0, len(groups)):
+        nums.push_back(atol(groups[i]))
+
+    return memo(springs, nums)
+
+
+fn part2(line: String) raises -> Int64:
+    let split = line.split(" ")
+
+    let tmp = split[1].split(",")
+    var groups = tmp
+    var springs = split[0]
+
+    for i in range(0, 4):
+        springs += "?" + split[0]
+        for j in range(0, len(tmp)):
+            groups.push_back(tmp[j])
+
+    var nums = DynamicVector[Int]()
+    for i in range(0, len(groups)):
+        nums.push_back(atol(groups[i]))
+
+    return memo(springs, nums)
+
+
+def main():
+    var part1Sum: Int64 = 0
+    var part2Sum: Int64 = 0
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            part1Sum += part1(lines[i])
+            part2Sum += part2(lines[i])
+
+    print(part1Sum)
+    print(part2Sum)
