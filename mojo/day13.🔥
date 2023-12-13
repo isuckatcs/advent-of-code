@@ -1,0 +1,135 @@
+from utils.vector import DynamicVector
+
+
+fn part1(block: DynamicVector[String]) raises -> Int:
+    fn getMirror(block: DynamicVector[String], reflections: DynamicVector[Int]) -> Int:
+        for i in range(0, len(reflections)):
+            let r = reflections[i]
+            var mirror = True
+
+            for j in range(0, r):
+                let opposite = r + (r - j) - 1
+
+                if opposite >= len(block):
+                    continue
+
+                mirror = mirror and block[j] == block[opposite]
+
+            if mirror:
+                return r
+
+        return 0
+
+    var reflRows = DynamicVector[Int]()
+
+    for i in range(0, len(block) - 1):
+        if block[i] == block[i + 1]:
+            reflRows.push_back(i + 1)
+
+    let r = getMirror(block, reflRows)
+    if r:
+        return r * 100
+
+    var rotated = DynamicVector[String]()
+
+    for i in range(0, len(block[0])):
+        var col = String()
+
+        for j in range(0, len(block)):
+            col += block[j][i]
+
+        rotated.push_back(col)
+
+    var reflCols = DynamicVector[Int]()
+
+    for i in range(0, len(rotated) - 1):
+        if rotated[i] == rotated[i + 1]:
+            reflCols.push_back(i + 1)
+
+    return getMirror(rotated, reflCols)
+
+
+fn part2(block: DynamicVector[String]) raises -> Int:
+    fn countDiff(a: String, b: String) -> Int:
+        var diff = 0
+
+        for i in range(0, len(a)):
+            if a[i] != b[i]:
+                diff += 1
+
+        return diff
+
+    fn getMirror(block: DynamicVector[String], reflections: DynamicVector[Int]) -> Int:
+        for i in range(0, len(reflections)):
+            let r = reflections[i]
+            var correction = False
+            var mirror = True
+
+            for j in range(0, r):
+                let opposite = r + (r - j) - 1
+
+                if opposite >= len(block):
+                    continue
+
+                let diff = countDiff(block[j], block[opposite])
+
+                mirror = mirror and (diff == 0 or (diff == 1 and not correction))
+                correction = correction or diff != 0
+
+            if mirror and correction:
+                return r
+
+        return 0
+
+    var reflRows = DynamicVector[Int]()
+
+    for i in range(0, len(block) - 1):
+        if countDiff(block[i], block[i + 1]) <= 1:
+            reflRows.push_back(i + 1)
+
+    let r = getMirror(block, reflRows)
+    if r:
+        return r * 100
+
+    var rotated = DynamicVector[String]()
+
+    for i in range(0, len(block[0])):
+        var col = String()
+
+        for j in range(0, len(block)):
+            col += block[j][i]
+
+        rotated.push_back(col)
+
+    var reflCols = DynamicVector[Int]()
+
+    for i in range(0, len(rotated) - 1):
+        if countDiff(rotated[i], rotated[i + 1]) <= 1:
+            reflCols.push_back(i + 1)
+
+    return getMirror(rotated, reflCols)
+
+
+def main():
+    var part1Sum: Int64 = 0
+    var part2Sum: Int64 = 0
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        var block = DynamicVector[String]()
+        for i in range(0, len(lines)):
+            if len(lines[i]) != 0:
+                block.push_back(lines[i])
+                continue
+
+            part1Sum += part1(block)
+            part2Sum += part2(block)
+            block.clear()
+
+        part1Sum += part1(block)
+        part2Sum += part2(block)
+
+    print(part1Sum)
+    print(part2Sum)
