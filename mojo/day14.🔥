@@ -1,0 +1,152 @@
+from utils.vector import DynamicVector
+
+
+fn find(v: DynamicVector[Int], elem: Int) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn part1(block: DynamicVector[String]) raises -> Int:
+    var weight = 0
+
+    for c in range(0, len(block[0])):
+        var stop = 0
+
+        for r in range(0, len(block)):
+            if block[r][c] == "#":
+                stop = r + 1
+                continue
+
+            if block[r][c] == "O":
+                weight += len(block) - stop
+                stop += 1
+
+    return weight
+
+
+fn part2(inout block: DynamicVector[String]) raises -> Int:
+    var values = DynamicVector[Int]()
+    var ns = DynamicVector[Int]()
+    var iters = DynamicVector[Int]()
+
+    var cycleIdx = 0
+    var cycleBase = 0
+    var prevCycleEnd = 0
+    var detectCycle = False
+
+    let rowCount = len(block)
+    let colCount = len(block[0])
+
+    let target = 1_000_000_000
+    for n in range(0, target):
+        var weight = 0
+
+        # Tilt north
+        for c in range(0, colCount):
+            var stop = 0
+
+            for r in range(0, rowCount):
+                if block[r][c] == "#":
+                    stop = r + 1
+                    continue
+
+                if block[r][c] == "O":
+                    block[r] = block[r][:c] + "." + block[r][c + 1 :]
+                    block[stop] = block[stop][:c] + "O" + block[stop][c + 1 :]
+                    stop += 1
+
+        # Tilt west
+        for r in range(0, rowCount):
+            var stop = 0
+
+            for c in range(0, colCount):
+                if block[r][c] == "#":
+                    stop = c + 1
+                    continue
+
+                if block[r][c] == "O":
+                    block[r] = block[r][:c] + "." + block[r][c + 1 :]
+                    block[r] = block[r][:stop] + "O" + block[r][stop + 1 :]
+                    stop += 1
+
+        # Tilt south
+        for c in range(0, colCount):
+            var stop = rowCount - 1
+
+            for r in range(rowCount - 1, -1, -1):
+                if block[r][c] == "#":
+                    stop = r - 1
+                    continue
+
+                if block[r][c] == "O":
+                    block[r] = block[r][:c] + "." + block[r][c + 1 :]
+                    block[stop] = block[stop][:c] + "O" + block[stop][c + 1 :]
+
+                    weight += rowCount - stop
+                    stop -= 1
+
+        # Tilt east
+        for r in range(0, rowCount):
+            var stop = colCount - 1
+
+            for c in range(colCount - 1, -1, -1):
+                if block[r][c] == "#":
+                    stop = c - 1
+                    continue
+
+                if block[r][c] == "O":
+                    block[r] = block[r][:c] + "." + block[r][c + 1 :]
+                    block[r] = block[r][:stop] + "O" + block[r][stop + 1 :]
+                    stop -= 1
+
+        if detectCycle:
+            detectCycle = weight == iters[cycleIdx + 1]
+            cycleIdx += 1
+
+        let weigthIdx = find(values, weight)
+        if weigthIdx != -1:
+            if detectCycle:
+                if iters[cycleBase] == weight:
+                    if prevCycleEnd == ns[weigthIdx]:
+                        break
+                    prevCycleEnd = n
+            else:
+                cycleBase = ns[weigthIdx]
+                cycleIdx = cycleBase
+                detectCycle = True
+
+        if weigthIdx != -1:
+            ns[weigthIdx] = n
+        else:
+            values.push_back(weight)
+            ns.push_back(n)
+
+        iters.push_back(weight)
+
+    if detectCycle:
+        let diff = len(iters) - prevCycleEnd
+        let mod = (target - prevCycleEnd - 1) % diff
+
+        return iters[prevCycleEnd + mod]
+
+    return iters[target - 1]
+
+
+fn main() raises:
+    var block = DynamicVector[String]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            block.push_back(lines[i])
+
+    print(part1(block))
+    print(part2(block))
