@@ -1,0 +1,112 @@
+from utils.vector import DynamicVector
+
+
+# Not generic, to prevent a lifetime analysis crash.
+@value
+struct Pair(CollectionElement):
+    var a: String
+    var b: Int
+
+
+struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
+    var v: DynamicVector[T]
+
+    fn __init__(inout self):
+        self.v = DynamicVector[T]()
+
+    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
+        self.v.__copyinit__(existing.v)
+
+    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
+        self.v.__moveinit__(existing.v)
+
+    fn __getitem__(self, i: Int) -> T:
+        return self.v[i]
+
+    fn __setitem__(inout self, i: Int, e: T):
+        self.v[i] = e
+
+    fn push_back(inout self, value: T):
+        self.v.push_back(value)
+
+    fn __len__(self) -> Int:
+        return len(self.v)
+
+
+fn filter(v: DynamicVectorWrapper[Pair], elem: String) -> DynamicVectorWrapper[Pair]:
+    var tmp = DynamicVectorWrapper[Pair]()
+
+    for i in range(0, len(v.v)):
+        if v[i].a != elem:
+            tmp.push_back(v[i])
+
+    return tmp
+
+
+fn part1(line: String) raises -> Int:
+    var res = 0
+
+    let steps = line.split(",")
+    for i in range(0, len(steps)):
+        var hash = 0
+        for j in range(0, len(steps[i])):
+            hash += int(steps[i]._buffer[j])
+            hash *= 17
+            hash %= 256
+        res += hash
+
+    return res
+
+
+fn part2(line: String) raises -> Int:
+    var boxes = DynamicVector[DynamicVectorWrapper[Pair]]()
+    boxes.resize(256, DynamicVectorWrapper[Pair]())
+
+    let steps = line.split(",")
+    for i in range(0, len(steps)):
+        let cur = steps[i]
+        let rm = cur[len(cur) - 1] == "-"
+
+        let delim: String
+        if rm:
+            delim = "-"
+        else:
+            delim = "="
+
+        let label = cur.split(delim)[0]
+
+        var hash = 0
+        for j in range(0, len(label)):
+            hash += int(label._buffer[j])
+            hash *= 17
+            hash %= 256
+
+        if rm:
+            boxes[hash] = filter(boxes[hash], label)
+            continue
+
+        let val = atol(cur[len(cur) - 1])
+        for j in range(0, len(boxes[hash])):
+            if boxes[hash][j].a == label:
+                boxes[hash][j].b = val
+                break
+        else:
+            boxes[hash].push_back(Pair(label, val))
+
+    var total = 0
+    for i in range(0, 256):
+        if len(boxes[i]) == 0:
+            continue
+
+        for j in range(0, len(boxes[i])):
+            total += (i + 1) * (j + 1) * boxes[i][j].b
+
+    return total
+
+
+fn main() raises:
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+
+        print(part1(input))
+        print(part2(input))
