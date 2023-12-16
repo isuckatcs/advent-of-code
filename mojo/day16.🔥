@@ -1,0 +1,158 @@
+from utils.vector import DynamicVector
+from math import max
+
+
+struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
+    var v: DynamicVector[T]
+
+    fn __init__(inout self):
+        self.v = DynamicVector[T]()
+
+    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
+        self.v.__copyinit__(existing.v)
+
+    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
+        self.v.__moveinit__(existing.v)
+
+    fn __getitem__(self, i: Int) -> T:
+        return self.v[i]
+
+    fn __setitem__(inout self, i: Int, e: T):
+        self.v[i] = e
+
+    fn push_back(inout self, value: T):
+        self.v.push_back(value)
+
+    fn __len__(self) -> Int:
+        return len(self.v)
+
+
+alias UP = 1 << 0
+alias DOWN = 1 << 1
+alias LEFT = 1 << 2
+alias RIGHT = 1 << 3
+
+
+@value
+@register_passable
+struct Light(CollectionElement):
+    var r: Int
+    var c: Int
+    var d: Int
+
+
+fn part1(cave: DynamicVector[String], start: Light = Light(0, 0, RIGHT)) -> Int:
+    var lights = DynamicVector[Light]()
+    lights.push_back(start)
+
+    var energized = DynamicVector[DynamicVectorWrapper[Int]]()
+    energized.resize(len(cave), DynamicVectorWrapper[Int]())
+    for i in range(0, len(energized)):
+        energized[i].v.resize(len(cave[0]), 0)
+
+    while len(lights) != 0:
+        let l = lights.pop_back()
+        var r = l.r
+        var c = l.c
+        let d = l.d
+
+        if r < 0 or r >= len(cave) or c < 0 or c >= len(cave[0]):
+            continue
+
+        if energized[r][c] & d:
+            continue
+
+        while True:
+            if r < 0 or r >= len(cave) or c < 0 or c >= len(cave[0]):
+                break
+
+            energized[r][c] |= d
+
+            let cur = cave[r][c]
+            if d == UP:
+                if cur == "\\":
+                    lights.push_back(Light(r, c - 1, LEFT))
+                    break
+                elif cur == "/":
+                    lights.push_back(Light(r, c + 1, RIGHT))
+                    break
+                elif cur == "-":
+                    lights.push_back(Light(r, c - 1, LEFT))
+                    lights.push_back(Light(r, c + 1, RIGHT))
+                    break
+                r -= 1
+            elif d == DOWN:
+                if cur == "\\":
+                    lights.push_back(Light(r, c + 1, RIGHT))
+                    break
+                elif cur == "/":
+                    lights.push_back(Light(r, c - 1, LEFT))
+                    break
+                elif cur == "-":
+                    lights.push_back(Light(r, c + 1, RIGHT))
+                    lights.push_back(Light(r, c - 1, LEFT))
+                    break
+                r += 1
+            elif d == LEFT:
+                if cur == "\\":
+                    lights.push_back(Light(r - 1, c, UP))
+                    break
+                elif cur == "/":
+                    lights.push_back(Light(r + 1, c, DOWN))
+                    break
+                elif cur == "|":
+                    lights.push_back(Light(r - 1, c, UP))
+                    lights.push_back(Light(r + 1, c, DOWN))
+                    break
+                c -= 1
+            elif d == RIGHT:
+                if cur == "\\":
+                    lights.push_back(Light(r + 1, c, DOWN))
+                    break
+                elif cur == "/":
+                    lights.push_back(Light(r - 1, c, UP))
+                    break
+                elif cur == "|":
+                    lights.push_back(Light(r + 1, c, DOWN))
+                    lights.push_back(Light(r - 1, c, UP))
+                    break
+                c += 1
+
+    var total = 0
+    for i in range(0, len(energized)):
+        for j in range(0, len(energized[0])):
+            if energized[i][j] != 0:
+                total += 1
+
+    return total
+
+
+fn part2(cave: DynamicVector[String]) -> Int:
+    var m = 0
+
+    for i in range(0, len(cave)):
+        m = max(m, part1(cave, Light(i, 0, RIGHT)))
+        m = max(m, part1(cave, Light(i, len(cave[0]) - 1, LEFT)))
+
+    for i in range(0, len(cave[0])):
+        m = max(m, part1(cave, Light(0, i, DOWN)))
+        m = max(m, part1(cave, Light(len(cave) - 1, i, UP)))
+
+    return m
+
+
+fn main() raises:
+    var cave = DynamicVector[String]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            cave.push_back(lines[i])
+
+    print(part1(cave))
+    print(part2(cave))
