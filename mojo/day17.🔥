@@ -1,0 +1,203 @@
+from utils.vector import DynamicVector
+from utils.static_tuple import StaticTuple
+
+
+struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
+    var v: DynamicVector[T]
+
+    fn __init__(inout self):
+        self.v = DynamicVector[T]()
+
+    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
+        self.v.__copyinit__(existing.v)
+
+    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
+        self.v.__moveinit__(existing.v)
+
+    fn __getitem__(self, i: Int) -> T:
+        return self.v[i]
+
+    fn __setitem__(inout self, i: Int, e: T):
+        self.v[i] = e
+
+    fn push_back(inout self, value: T):
+        self.v.push_back(value)
+
+    fn __len__(self) -> Int:
+        return len(self.v)
+
+
+alias UP = 0
+alias DOWN = 1
+alias LEFT = 2
+alias RIGHT = 3
+
+
+@value
+@register_passable
+struct Data(CollectionElement):
+    var w: Int
+    var r: Int
+    var c: Int
+    var s: Int
+    var d: Int
+
+
+fn popMin(inout q: DynamicVector[Data]) -> Data:
+    var m = 0
+    for i in range(1, len(q)):
+        if q[i].w < q[m].w:
+            m = i
+
+    let tmpD = q[m]
+
+    var tmpQ = DynamicVector[Data]()
+    for i in range(0, len(q)):
+        if i != m:
+            tmpQ.push_back(q[i])
+    q = tmpQ ^
+
+    return tmpD
+
+
+fn part1(blocks: DynamicVector[String]) raises -> Int:
+    let vr = StaticTuple[4](-1, 1, 0, 0)
+    let vc = StaticTuple[4](0, 0, -1, 1)
+
+    let ldw0 = len(blocks)
+    let ldw1 = len(blocks[0])
+    let ldw2 = 4
+    let ldw3 = 4
+
+    var weights = DynamicVector[Int]()
+    weights.resize(ldw0 * ldw1 * ldw2 * ldw3, 1 << 31)
+
+    var q = DynamicVector[Data]()
+    q.push_back(Data(0, 0, 0, 0, RIGHT))
+    weights[0] = 0
+
+    while len(q) != 0:
+        let data = popMin(q)
+        let w = data.w
+        let r = data.r
+        let c = data.c
+        let s = data.s
+        let d = data.d
+
+        if r == len(blocks) - 1 and c == len(blocks[0]) - 1:
+            return w
+
+        var dirs = DynamicVector[Int]()
+        dirs.push_back(d)
+
+        if d == LEFT or d == RIGHT:
+            dirs.push_back(UP)
+            dirs.push_back(DOWN)
+
+        if d == UP or d == DOWN:
+            dirs.push_back(LEFT)
+            dirs.push_back(RIGHT)
+
+        for i in range(0, len(dirs)):
+            let nr = r + vr[dirs[i]]
+            let nc = c + vc[dirs[i]]
+
+            let ns: Int
+            if dirs[i] != d or r == 0 and c == 0:
+                ns = 1
+            else:
+                ns = s + 1
+
+            if ns > 3 or nr < 0 or nr >= len(blocks) or nc < 0 or nc >= len(blocks[0]):
+                continue
+
+            # https://en.wikipedia.org/wiki/Row-_and_column-major_order#Address_calculation_in_general
+            let wi = ns + ldw3 * (dirs[i] + ldw2 * (nc + ldw1 * nr))
+            let nw = w + atol(blocks[nr][nc])
+
+            if nw < weights[wi]:
+                weights[wi] = nw
+                q.push_back(Data(nw, nr, nc, ns, dirs[i]))
+
+    return 0
+
+
+fn part2(blocks: DynamicVector[String]) raises -> Int:
+    let vr = StaticTuple[4](-1, 1, 0, 0)
+    let vc = StaticTuple[4](0, 0, -1, 1)
+
+    let ldw0 = len(blocks)
+    let ldw1 = len(blocks[0])
+    let ldw2 = 4
+    let ldw3 = 11
+
+    var weights = DynamicVector[Int]()
+    weights.resize(ldw0 * ldw1 * ldw2 * ldw3, 1 << 31)
+
+    var q = DynamicVector[Data]()
+    q.push_back(Data(0, 0, 0, 0, RIGHT))
+    weights[0] = 0
+
+    while len(q) != 0:
+        let data = popMin(q)
+        let w = data.w
+        let r = data.r
+        let c = data.c
+        let s = data.s
+        let d = data.d
+
+        let isStart = r == 0 and c == 0
+        let initialized = s >= 4
+        if r == len(blocks) - 1 and c == len(blocks[0]) - 1 and initialized:
+            return w
+
+        var dirs = DynamicVector[Int]()
+        dirs.push_back(d)
+
+        if (d == LEFT or d == RIGHT) and (initialized or isStart):
+            dirs.push_back(UP)
+            dirs.push_back(DOWN)
+
+        if (d == UP or d == DOWN) and (initialized or isStart):
+            dirs.push_back(LEFT)
+            dirs.push_back(RIGHT)
+
+        for i in range(0, len(dirs)):
+            let nr = r + vr[dirs[i]]
+            let nc = c + vc[dirs[i]]
+
+            let ns: Int
+            if i != 0 or isStart:
+                ns = 1
+            else:
+                ns = s + 1
+
+            if ns > 10 or nr < 0 or nr >= len(blocks) or nc < 0 or nc >= len(blocks[0]):
+                continue
+
+            # https://en.wikipedia.org/wiki/Row-_and_column-major_order#Address_calculation_in_general
+            let wi = ns + ldw3 * (dirs[i] + ldw2 * (nc + ldw1 * nr))
+            let nw = w + atol(blocks[nr][nc])
+
+            if nw < weights[wi]:
+                weights[wi] = nw
+                q.push_back(Data(nw, nr, nc, ns, dirs[i]))
+
+    return 0
+
+
+fn main() raises:
+    var blocks = DynamicVector[String]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            blocks.push_back(lines[i])
+
+    print(part1(blocks))
+    print(part2(blocks))
