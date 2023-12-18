@@ -1,0 +1,115 @@
+from utils.vector import DynamicVector
+from math import min, max, abs
+from python import Python
+
+alias SIMD_T = SIMD[DType.int64, 1024]
+
+
+fn solve(xs: DynamicVector[Int], ys: DynamicVector[Int], steps: Int) -> Int:
+    # https://en.wikipedia.org/wiki/Shoelace_formula#Example
+    var ax = SIMD_T()
+    var ay = SIMD_T()
+    for i in range(0, len(xs) - 1):
+        ax[i] = xs[i]
+        ay[i] = ys[i + 1]
+
+    var sx = SIMD_T()
+    var sy = SIMD_T()
+    for i in range(1, len(xs)):
+        sx[i] = xs[i]
+        sy[i] = ys[i - 1]
+
+    ax *= ay
+    sx *= sy
+
+    var area = abs(ax.reduce_add() - sx.reduce_add()).to_int()
+    area /= 2
+
+    # https://en.wikipedia.org/wiki/Pick%27s_theorem#Formula
+    let b = steps
+    let i = (area - b / 2 + 1).to_int()
+
+    return i + b
+
+
+fn part1(moves: DynamicVector[String]) raises -> Int:
+    var xs = DynamicVector[Int]()
+    var ys = DynamicVector[Int]()
+    xs.append(0)
+    ys.append(0)
+
+    var steps = 0
+    for i in range(0, len(moves)):
+        let split = moves[i].split(" ")
+        let dir = split[0]
+        let step = atol(split[1])
+
+        var nx = xs[len(xs) - 1]
+        var ny = ys[len(ys) - 1]
+
+        if dir == "R":
+            nx += step
+        elif dir == "L":
+            nx -= step
+        elif dir == "U":
+            ny += step
+        elif dir == "D":
+            ny -= step
+
+        steps += step
+        xs.append(nx)
+        ys.append(ny)
+
+    return solve(xs, ys, steps)
+
+
+fn part2(moves: DynamicVector[String]) raises -> Int:
+    let int = Python.evaluate("int")
+
+    var xs = DynamicVector[Int]()
+    var ys = DynamicVector[Int]()
+    xs.append(0)
+    ys.append(0)
+
+    var steps = 0
+    for i in range(0, len(moves)):
+        let split = moves[i].split(" ")
+        let hex = split[2]
+
+        let step = int(hex[2:-2], 16).to_float64().to_int()
+        let dir = hex[len(hex) - 2]
+
+        var nx = xs[len(xs) - 1]
+        var ny = ys[len(ys) - 1]
+
+        if dir == 0:
+            nx += step
+        elif dir == 2:
+            nx -= step
+        elif dir == 3:
+            ny += step
+        elif dir == 1:
+            ny -= step
+
+        steps += step
+        xs.append(nx)
+        ys.append(ny)
+
+    return solve(xs, ys, steps)
+
+
+fn main() raises:
+    var moves = DynamicVector[String]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            moves.push_back(lines[i])
+
+    print(part1(moves))
+    print(part2(moves))
