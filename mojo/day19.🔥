@@ -1,0 +1,222 @@
+from utils.vector import DynamicVector
+
+
+@value
+@register_passable
+struct Part(CollectionElement):
+    var x: Int
+    var m: Int
+    var a: Int
+    var s: Int
+
+
+@value
+struct WorkflowItem(CollectionElement):
+    var cat: String
+    var less: Bool
+    var size: Int
+    var dst: String
+
+
+@value
+struct Workflow(CollectionElement):
+    var id: String
+    var items: DynamicVector[WorkflowItem]
+
+
+fn part1(workflows: DynamicVector[Workflow], parts: DynamicVector[Part]) -> Int:
+    var sum = 0
+
+    for i in range(0, len(parts)):
+        let p = parts[i]
+        var cur: String = "in"
+
+        while cur != "A" and cur != "R":
+            var wi = 0
+            while wi < len(workflows) and workflows[wi].id != cur:
+                wi += 1
+
+            let items = workflows[wi].items
+            for j in range(0, len(items)):
+                let item = items[j]
+
+                var hit = False
+                if item.cat == "x":
+                    hit = p.x < item.size if item.less else p.x > item.size
+                elif item.cat == "m":
+                    hit = p.m < item.size if item.less else p.m > item.size
+                elif item.cat == "a":
+                    hit = p.a < item.size if item.less else p.a > item.size
+                elif item.cat == "s":
+                    hit = p.s < item.size if item.less else p.s > item.size
+                else:
+                    hit = True
+
+                if hit:
+                    cur = item.dst
+                    break
+
+        if cur == "A":
+            sum = sum + p.x + p.m + p.a + p.s
+
+    return sum
+
+
+@value
+@register_passable
+struct Range(CollectionElement):
+    var min: Int
+    var max: Int
+
+
+@value
+struct State(CollectionElement):
+    var id: String
+    var x: Range
+    var m: Range
+    var a: Range
+    var s: Range
+
+
+fn part2(workflows: DynamicVector[Workflow]) -> Int:
+    var combiantions = 0
+
+    var q = DynamicVector[State]()
+    var iq = 0
+
+    q.push_back(
+        State(
+            "in",
+            Range(1, 4000),
+            Range(1, 4000),
+            Range(1, 4000),
+            Range(1, 4000),
+        )
+    )
+
+    while iq != len(q):
+        var s = q[iq]
+
+        iq += 1
+
+        if s.id == "R":
+            continue
+
+        if s.id == "A":
+            combiantions += (
+                (s.x.max - s.x.min + 1)
+                * (s.m.max - s.m.min + 1)
+                * (s.a.max - s.a.min + 1)
+                * (s.s.max - s.s.min + 1)
+            )
+            continue
+
+        var wi = 0
+        while wi < len(workflows) and workflows[wi].id != s.id:
+            wi += 1
+
+        let items = workflows[wi].items
+        for j in range(0, len(items)):
+            let item = items[j]
+
+            var ns = s
+            ns.id = item.dst
+
+            if item.cat == "x":
+                if item.less:
+                    ns.x.max = item.size - 1
+                    s.x.min = item.size
+                else:
+                    ns.x.min = item.size + 1
+                    s.x.max = item.size
+            elif item.cat == "m":
+                if item.less:
+                    ns.m.max = item.size - 1
+                    s.m.min = item.size
+                else:
+                    ns.m.min = item.size + 1
+                    s.m.max = item.size
+            elif item.cat == "a":
+                if item.less:
+                    ns.a.max = item.size - 1
+                    s.a.min = item.size
+                else:
+                    ns.a.min = item.size + 1
+                    s.a.max = item.size
+            elif item.cat == "s":
+                if item.less:
+                    ns.s.max = item.size - 1
+                    s.s.min = item.size
+                else:
+                    ns.s.min = item.size + 1
+                    s.s.max = item.size
+
+            q.push_back(ns)
+
+    return combiantions
+
+
+fn main() raises:
+    var workflows = DynamicVector[Workflow]()
+    var parts = DynamicVector[Part]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        var i = 0
+        while i < len(lines):
+            if len(lines[i]) == 0:
+                i += 1
+                break
+
+            let split = lines[i].split("{")
+            var w = Workflow(split[0], DynamicVector[WorkflowItem]())
+
+            let itemsSplit = split[1].split(",")
+            for j in range(0, len(itemsSplit)):
+                let itemStr = itemsSplit[j]
+
+                if itemStr[len(itemStr) - 1] == "}":
+                    w.items.push_back(
+                        WorkflowItem(".", False, 0, itemStr[0 : len(itemStr) - 1])
+                    )
+                    break
+
+                let tailsSplit = itemStr[2:].split(":")
+
+                w.items.push_back(
+                    WorkflowItem(
+                        itemStr[0],
+                        itemStr[1] == "<",
+                        atol(tailsSplit[0]),
+                        tailsSplit[1],
+                    )
+                )
+
+                j += 1
+
+            workflows.push_back(w)
+            i += 1
+
+        while i < len(lines):
+            if len(lines[i]) == 0:
+                i += 1
+                break
+
+            let trim = lines[i][1 : len(lines[i]) - 1]
+            let split = trim.split(",")
+
+            parts.push_back(
+                Part(
+                    atol(split[0].split("=")[1]),
+                    atol(split[1].split("=")[1]),
+                    atol(split[2].split("=")[1]),
+                    atol(split[3].split("=")[1]),
+                )
+            )
+
+            i += 1
+
+    print(part1(workflows, parts))
+    print(part2(workflows))
