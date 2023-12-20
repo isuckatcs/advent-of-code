@@ -1,29 +1,16 @@
-struct DynamicVectorWrapper[T: CollectionElement](CollectionElement):
-    var v: DynamicVector[T]
-
-    fn __init__(inout self):
-        self.v = DynamicVector[T]()
-
-    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
-        self.v.__copyinit__(existing.v)
-
-    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
-        self.v.__moveinit__(existing.v)
-
-
-fn part1(sequences: DynamicVector[DynamicVectorWrapper[Int]]) -> Int:
+fn part1(sequences: DynamicVector[DynamicVector[Int]]) -> Int:
     var out = 0
     for i in range(0, len(sequences)):
-        let vec = sequences[i].v
+        let vec = sequences[i]
         out += vec[len(vec) - 1]
 
     return out
 
 
-fn part2(sequences: DynamicVector[DynamicVectorWrapper[Int]]) -> Int:
+fn part2(sequences: DynamicVector[DynamicVector[Int]]) -> Int:
     var out = 0
     for i in range(len(sequences) - 1, -1, -1):
-        out = sequences[i].v[0] - out
+        out = sequences[i][0] - out
 
     return out
 
@@ -40,24 +27,24 @@ def main():
             if len(lines[i]) == 0:
                 continue
 
-            var sequences = DynamicVector[DynamicVectorWrapper[Int]]()
-            var s = DynamicVectorWrapper[Int]()
+            var sequences = DynamicVector[DynamicVector[Int]]()
+            var s = DynamicVector[Int]()
 
             let nums = lines[i].split(" ")
             for j in range(0, len(nums)):
-                s.v.push_back(atol(nums[j]))
+                s.push_back(atol(nums[j]))
 
             sequences.push_back(s ^)
 
             while True:
-                var tmp = DynamicVectorWrapper[Int]()
+                var tmp = DynamicVector[Int]()
                 var allZeros = True
 
-                let back = sequences[len(sequences) - 1].v
+                let back = sequences[len(sequences) - 1]
                 for j in range(0, len(back) - 1):
                     let diff = back[j + 1] - back[j]
                     allZeros = allZeros and diff == 0
-                    tmp.v.push_back(diff)
+                    tmp.push_back(diff)
 
                 if allZeros:
                     break
