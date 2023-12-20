@@ -1,4 +1,4 @@
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 
 
 # Not generic, to prevent a lifetime analysis crash.
@@ -8,35 +8,10 @@ struct Pair(CollectionElement):
     var b: Int
 
 
-struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
-    var v: DynamicVector[T]
+fn filter(v: DynamicVector[Pair], elem: String) -> DynamicVector[Pair]:
+    var tmp = DynamicVector[Pair]()
 
-    fn __init__(inout self):
-        self.v = DynamicVector[T]()
-
-    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
-        self.v.__copyinit__(existing.v)
-
-    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
-        self.v.__moveinit__(existing.v)
-
-    fn __getitem__(self, i: Int) -> T:
-        return self.v[i]
-
-    fn __setitem__(inout self, i: Int, e: T):
-        self.v[i] = e
-
-    fn push_back(inout self, value: T):
-        self.v.push_back(value)
-
-    fn __len__(self) -> Int:
-        return len(self.v)
-
-
-fn filter(v: DynamicVectorWrapper[Pair], elem: String) -> DynamicVectorWrapper[Pair]:
-    var tmp = DynamicVectorWrapper[Pair]()
-
-    for i in range(0, len(v.v)):
+    for i in range(0, len(v)):
         if v[i].a != elem:
             tmp.push_back(v[i])
 
@@ -59,8 +34,8 @@ fn part1(line: String) raises -> Int:
 
 
 fn part2(line: String) raises -> Int:
-    var boxes = DynamicVector[DynamicVectorWrapper[Pair]]()
-    boxes.resize(256, DynamicVectorWrapper[Pair]())
+    var boxes = DynamicVector[DynamicVector[Pair]]()
+    boxes.resize(256, DynamicVector[Pair]())
 
     let steps = line.split(",")
     for i in range(0, len(steps)):
