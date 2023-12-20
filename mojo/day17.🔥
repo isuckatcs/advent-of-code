@@ -1,30 +1,5 @@
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 from utils.static_tuple import StaticTuple
-
-
-struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
-    var v: DynamicVector[T]
-
-    fn __init__(inout self):
-        self.v = DynamicVector[T]()
-
-    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
-        self.v.__copyinit__(existing.v)
-
-    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
-        self.v.__moveinit__(existing.v)
-
-    fn __getitem__(self, i: Int) -> T:
-        return self.v[i]
-
-    fn __setitem__(inout self, i: Int, e: T):
-        self.v[i] = e
-
-    fn push_back(inout self, value: T):
-        self.v.push_back(value)
-
-    fn __len__(self) -> Int:
-        return len(self.v)
 
 
 alias UP = 0
