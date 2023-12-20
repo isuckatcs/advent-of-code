@@ -1,30 +1,5 @@
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 from math import max
-
-
-struct DynamicVectorWrapper[T: CollectionElement](CollectionElement, Sized):
-    var v: DynamicVector[T]
-
-    fn __init__(inout self):
-        self.v = DynamicVector[T]()
-
-    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
-        self.v.__copyinit__(existing.v)
-
-    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
-        self.v.__moveinit__(existing.v)
-
-    fn __getitem__(self, i: Int) -> T:
-        return self.v[i]
-
-    fn __setitem__(inout self, i: Int, e: T):
-        self.v[i] = e
-
-    fn push_back(inout self, value: T):
-        self.v.push_back(value)
-
-    fn __len__(self) -> Int:
-        return len(self.v)
 
 
 alias UP = 1 << 0
@@ -45,10 +20,10 @@ fn part1(cave: DynamicVector[String], start: Light = Light(0, 0, RIGHT)) -> Int:
     var lights = DynamicVector[Light]()
     lights.push_back(start)
 
-    var energized = DynamicVector[DynamicVectorWrapper[Int]]()
-    energized.resize(len(cave), DynamicVectorWrapper[Int]())
+    var energized = DynamicVector[DynamicVector[Int]]()
+    energized.resize(len(cave), DynamicVector[Int]())
     for i in range(0, len(energized)):
-        energized[i].v.resize(len(cave[0]), 0)
+        energized[i].resize(len(cave[0]), 0)
 
     while len(lights) != 0:
         let l = lights.pop_back()
