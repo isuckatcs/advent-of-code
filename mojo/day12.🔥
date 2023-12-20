@@ -1,33 +1,11 @@
-from utils.vector import DynamicVector
-
-
-struct DynamicVectorWrapper[T: CollectionElement](CollectionElement):
-    var v: DynamicVector[T]
-
-    fn __init__(inout self):
-        self.v = DynamicVector[T]()
-
-    fn __copyinit__(inout self, existing: DynamicVectorWrapper[T]):
-        self.v.__copyinit__(existing.v)
-
-    fn __moveinit__(inout self, owned existing: DynamicVectorWrapper[T]):
-        self.v.__moveinit__(existing.v)
-
-    fn __getitem__(self, i: Int) -> T:
-        return self.v[i]
-
-    fn __setitem__(inout self, i: Int, e: T):
-        self.v[i] = e
-
-    fn push_back(inout self, value: T):
-        self.v.push_back(value)
+from collections.vector import DynamicVector
 
 
 fn memo(springs: String, groups: DynamicVector[Int]) -> Int64:
-    var cache = DynamicVector[DynamicVectorWrapper[Int64]]()
-    cache.resize(len(springs), DynamicVectorWrapper[Int64]())
+    var cache = DynamicVector[DynamicVector[Int64]]()
+    cache.resize(len(springs), DynamicVector[Int64]())
     for i in range(0, len(springs)):
-        cache[i].v.resize(len(groups), -1)
+        cache[i].resize(len(groups), -1)
 
     return dp(springs, groups, cache)
 
@@ -35,7 +13,7 @@ fn memo(springs: String, groups: DynamicVector[Int]) -> Int64:
 fn dp(
     springs: String,
     groups: DynamicVector[Int],
-    inout cache: DynamicVector[DynamicVectorWrapper[Int64]],
+    inout cache: DynamicVector[DynamicVector[Int64]],
     li: Int = 0,
     gi: Int = 0,
 ) -> Int64:
