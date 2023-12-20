@@ -1,7 +1,7 @@
 from math import min, max
 from math.limit import max_finite
 from python import Python
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 
 
 fn part1(input: String) raises -> Int:
