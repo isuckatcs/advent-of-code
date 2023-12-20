@@ -1,6 +1,6 @@
 from python import Python
-from utils.vector import DynamicVector
-from utils.vector import InlinedFixedVector
+from collections.vector import DynamicVector
+from collections.vector import InlinedFixedVector
 from algorithm.sort import sort
 
 
