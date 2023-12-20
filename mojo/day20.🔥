@@ -1,0 +1,212 @@
+from collections.vector import DynamicVector
+from math import lcm
+
+
+@value
+struct Pair(CollectionElement):
+    var first: String
+    var second: Bool
+
+
+@value
+struct Module(CollectionElement):
+    var type: Int
+    var connections: DynamicVector[String]
+    var flipped: Bool
+    var inputStrs: DynamicVector[String]
+    var inputPulses: DynamicVector[Bool]
+
+
+fn find(v: DynamicVector[String], elem: String) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn part1(modules: DynamicVector[String], i: DynamicVector[Module]) -> Int:
+    var infos = i
+    var low = 0
+    var high = 0
+
+    for _ in range(0, 1000):
+        var q = DynamicVector[Pair]()
+        var qi = 0
+
+        q.push_back(Pair("broadcaster", False))
+
+        while qi < len(q):
+            let p = q[qi]
+            qi += 1
+
+            let cur = p.first
+            var pulse = p.second
+
+            if pulse:
+                high += 1
+            else:
+                low += 1
+
+            let mi = find(modules, cur)
+            var curInfo = infos[mi]
+
+            if curInfo.type == 1:
+                if pulse:
+                    continue
+
+                pulse = not curInfo.flipped
+                curInfo.flipped = not curInfo.flipped
+            elif curInfo.type == 2:
+                var allHigh = True
+                for i in range(0, len(curInfo.inputPulses)):
+                    allHigh = allHigh & curInfo.inputPulses[i]
+
+                pulse = not allHigh
+
+            infos[mi] = curInfo
+
+            for i in range(0, len(curInfo.connections)):
+                let c = curInfo.connections[i]
+
+                let j = find(modules, c)
+                var cInfo = infos[j]
+
+                if cInfo.type == 2:
+                    let k = find(cInfo.inputStrs, cur)
+                    cInfo.inputPulses[k] = pulse
+
+                infos[j] = cInfo
+
+                q.push_back(Pair(c, pulse))
+
+    return low * high
+
+
+fn part2(modules: DynamicVector[String], i: DynamicVector[Module]) -> Int:
+    var infos = i
+
+    let rxParent = infos[find(modules, "rx")].inputStrs[0]
+    let subEndings = infos[find(modules, rxParent)].inputStrs
+    var cycles = DynamicVector[Int]()
+
+    var push = 1
+    while len(cycles) != 4:
+        var q = DynamicVector[Pair]()
+        var qi = 0
+
+        q.push_back(Pair("broadcaster", False))
+
+        while qi < len(q):
+            let p = q[qi]
+            qi += 1
+
+            let cur = p.first
+            var pulse = p.second
+
+            if find(subEndings, cur) != -1 and not pulse:
+                cycles.push_back(push)
+
+            var mi = 0
+            while mi < len(modules) and modules[mi] != cur:
+                mi += 1
+
+            var curInfo = infos[mi]
+
+            if curInfo.type == 1:
+                if pulse:
+                    continue
+
+                pulse = not curInfo.flipped
+                curInfo.flipped = not curInfo.flipped
+            elif curInfo.type == 2:
+                var allHigh = True
+                for i in range(0, len(curInfo.inputPulses)):
+                    allHigh = allHigh & curInfo.inputPulses[i]
+
+                pulse = not allHigh
+
+            infos[mi] = curInfo
+
+            for i in range(0, len(curInfo.connections)):
+                let c = curInfo.connections[i]
+
+                let j = find(modules, c)
+                var cInfo = infos[j]
+
+                if cInfo.type == 2:
+                    let k = find(cInfo.inputStrs, cur)
+                    cInfo.inputPulses[k] = pulse
+
+                infos[j] = cInfo
+
+                q.push_back(Pair(c, pulse))
+
+        push += 1
+
+    var total = 1
+    for i in range(0, len(cycles)):
+        total = lcm(total, cycles[i])
+
+    return total
+
+
+fn main() raises:
+    var modules = DynamicVector[String]()
+    var infos = DynamicVector[Module]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            if len(lines[i]) == 0:
+                continue
+
+            let line = lines[i]
+            let split = line.split(" -> ")
+            let connections = split[1].split(", ")
+
+            var t = 0
+            var id = split[0]
+            if split[0][0] == "%":
+                t = 1
+                id = split[0][1:]
+            elif split[0][0] == "&":
+                t = 2
+                id = split[0][1:]
+
+            let module = Module(
+                t,
+                connections,
+                False,
+                DynamicVector[String](),
+                DynamicVector[Bool](),
+            )
+
+            modules.push_back(id)
+            infos.push_back(module)
+
+    modules.push_back("rx")
+    infos.push_back(
+        Module(
+            0,
+            DynamicVector[String](),
+            False,
+            DynamicVector[String](),
+            DynamicVector[Bool](),
+        )
+    )
+
+    for i in range(0, len(modules)):
+        let cs = infos[i].connections
+
+        for ci in range(0, len(cs)):
+            let j = find(modules, cs[ci])
+
+            if infos[j].type == 2 or cs[ci] == "rx":
+                infos[j].inputStrs.push_back(modules[i])
+                infos[j].inputPulses.push_back(False)
+
+    print(part1(modules, infos))
+    print(part2(modules, infos))
