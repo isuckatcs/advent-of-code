@@ -1,4 +1,4 @@
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 
 
 fn part1(block: DynamicVector[String]) raises -> Int:
