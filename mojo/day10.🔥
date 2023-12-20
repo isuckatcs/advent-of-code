@@ -1,5 +1,5 @@
 from utils.static_tuple import StaticTuple
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 
 
 @value
