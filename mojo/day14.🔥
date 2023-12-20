@@ -1,4 +1,4 @@
-from utils.vector import DynamicVector
+from collections.vector import DynamicVector
 
 
 fn find(v: DynamicVector[Int], elem: Int) -> Int:
