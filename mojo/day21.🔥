@@ -1,0 +1,108 @@
+from utils.static_tuple import StaticTuple
+from collections.vector import DynamicVector
+
+
+@value
+struct Pair[T: CollectionElement, R: CollectionElement](CollectionElement):
+    var a: T
+    var b: R
+
+
+fn contains(v: DynamicVector[Pair[Int, Int]], elem: Pair[Int, Int]) -> Bool:
+    for i in range(0, len(v)):
+        if v[i].a == elem.a and v[i].b == elem.b:
+            return True
+
+    return False
+
+
+fn getReachedPlotCount(garden: DynamicVector[String], steps: Int) -> Int:
+    var start = Pair(0, 0)
+    for r in range(0, len(garden)):
+        let c = garden[r].find("S")
+        if c != -1:
+            start = Pair(r,c)
+            break
+
+    var visited = DynamicVector[Pair[Int, Int]]()
+    var queue = DynamicVector[Pair[Int, Int]]()
+    var qFront = 0
+
+    queue.push_back(start)
+    queue.push_back(Pair(-1, -1))
+
+    var step = 0
+    while qFront < len(queue):
+        let f = queue[qFront]
+        qFront += 1
+
+        if f.a == -1:
+            if step == steps:
+                break
+
+            step += 1
+            visited.clear()
+
+            if qFront < len(queue):
+                queue.push_back(Pair(-1, -1))
+
+            continue
+
+        if contains(visited, f):
+            continue
+
+        visited.push_back(f)
+
+        let vr = StaticTuple[4](0, 0, 1, -1)
+        let vc = StaticTuple[4](1, -1, 0, 0)
+
+        for i in range(0, len(vr)):
+            let nr = f.a + vr[i]
+            let nc = f.b + vc[i]
+
+            if (
+                nr < 0
+                or nr >= len(garden)
+                or nc < 0
+                or nc >= len(garden[0])
+                or garden[nr][nc] == "#"
+            ):
+                continue
+
+            let p = Pair(nr, nc)
+            queue.push_back(p)
+
+    return len(visited)
+
+
+fn part1(garden: DynamicVector[String]) -> Int:
+    return getReachedPlotCount(garden, 64)
+
+
+fn part2(garden: DynamicVector[String]) -> Int:
+    let n = 26501365;
+
+    let oddCovered = getReachedPlotCount(garden, 131);
+    let oddDiamond = getReachedPlotCount(garden, 65);
+
+    let evenCovered = getReachedPlotCount(garden, 130);
+    let evenDiamond = getReachedPlotCount(garden, 64);
+
+    let repetition = ((2 * n + 1) / len(garden[0])).to_int();
+    let dist = ((repetition - 1) / 2).to_int();
+
+    let totalOdd = dist + 1 + (dist + 1) * dist;
+    let totalEven = dist + (dist - 1) * dist;
+
+    return totalOdd * oddCovered + totalEven * evenCovered -
+            (dist + 1) * (oddCovered - oddDiamond) +
+            dist * (evenCovered - evenDiamond);
+
+
+fn main() raises:
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let garden = input.split("\n")
+
+        print(part1(garden))
+        print(part2(garden))
