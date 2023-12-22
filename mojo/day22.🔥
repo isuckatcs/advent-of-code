@@ -1,0 +1,208 @@
+from collections.vector import DynamicVector
+from algorithm import max, min
+
+
+@value
+struct Pair[T: CollectionElement, R: CollectionElement](CollectionElement):
+    var a: T
+    var b: R
+
+
+@value
+@register_passable
+struct Point:
+    var x: Int
+    var y: Int
+    var z: Int
+
+
+@value
+@register_passable
+struct Brick(CollectionElement):
+    var id: Int
+    var begin: Point
+    var end: Point
+
+
+@value
+struct CollisionData(CollectionElement):
+    var id: Int
+    var supports: DynamicVector[Int]
+    var supportedBy: DynamicVector[Int]
+
+
+alias CollisionDataStorage = DynamicVector[CollisionData]
+
+
+fn find(v: DynamicVector[Int], elem: Int) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn find(v: CollisionDataStorage, id: Int) -> Int:
+    for i in range(0, len(v)):
+        if v[i].id == id:
+            return i
+
+    return -1
+
+
+fn findOrInsert(inout v: CollisionDataStorage, id: Int) -> Int:
+    let idx = find(v, id)
+    if idx != -1:
+        return idx
+
+    v.push_back(CollisionData(id, DynamicVector[Int](), DynamicVector[Int]()))
+    return len(v) - 1
+
+
+fn simulateGravity(owned b: DynamicVector[Brick]) -> CollisionDataStorage:
+    var bricks = b ^
+
+    for i in range(0, len(bricks)):
+        for j in range(0, len(bricks) - 1):
+            if bricks[j].begin.z > bricks[j + 1].begin.z:
+                let tmp = bricks[j]
+                bricks[j] = bricks[j + 1]
+                bricks[j + 1] = tmp
+
+    var storage = CollisionDataStorage()
+
+    for i in range(0, len(bricks)):
+        let id = bricks[i].id
+        let b = bricks[i].begin
+        let e = bricks[i].end
+
+        _ = findOrInsert(storage, id)
+
+        var maybeCollides = DynamicVector[Pair[Int, Int]]()
+        var collisionZ = 1
+
+        for j in range(0, len(bricks)):
+            let ci = bricks[j].id
+            let cb = bricks[j].begin
+            let ce = bricks[j].end
+
+            if id == ci:
+                continue
+
+            let xb = max(cb.x, b.x)
+            let xe = min(ce.x, e.x)
+
+            let yb = max(cb.y, b.y)
+            let ye = min(ce.y, e.y)
+
+            if xb > xe or yb > ye:
+                continue
+
+            if ce.z + 1 <= b.z:
+                collisionZ = max(collisionZ, ce.z + 1)
+                maybeCollides.push_back(Pair(ci, ce.z + 1))
+
+        let fall = b.z - collisionZ
+        # Workaround for https://github.com/modularml/mojo/issues/1546.
+        bricks[i].begin = Point(b.x, b.y, b.z - fall)
+        bricks[i].end = Point(e.x, e.y, e.z - fall)
+
+        for j in range(0, len(maybeCollides)):
+            let colliderId = maybeCollides[j].a
+            let colliderZ = maybeCollides[j].b
+
+            if colliderZ == collisionZ:
+                storage[findOrInsert(storage, colliderId)].supports.push_back(id)
+                storage[findOrInsert(storage, id)].supportedBy.push_back(colliderId)
+
+    return storage
+
+
+fn part1(collisionDatas: CollisionDataStorage) -> Int:
+    var removed = 0
+    for i in range(0, len(collisionDatas)):
+        let data = collisionDatas[i]
+
+        var canRemove = True
+        for j in range(0, len(data.supports)):
+            let supportData = collisionDatas[find(collisionDatas, data.supports[j])]
+            canRemove = canRemove and len(supportData.supportedBy) > 1
+
+        removed += 1 if canRemove else 0
+
+    return removed
+
+
+fn part2(collisionDatas: CollisionDataStorage) -> Int:
+    var total = 0
+
+    for i in range(0, len(collisionDatas)):
+        var visited = DynamicVector[Int]()
+        var queue = DynamicVector[Int]()
+        var qFront = 0
+
+        let cur = collisionDatas[i]
+        queue.push_back(cur.id)
+        visited.push_back(cur.id)
+
+        var falling = 0
+        while qFront < len(queue):
+            let b = queue[qFront]
+            qFront += 1
+
+            let supporteds = collisionDatas[find(collisionDatas, b)].supports
+            for j in range(0, len(supporteds)):
+                let supported = supporteds[j]
+
+                if find(visited, supported) != -1:
+                    continue
+
+                let supporters = collisionDatas[
+                    find(collisionDatas, supported)
+                ].supportedBy
+
+                var supportersFalling = True
+                for k in range(0, len(supporters)):
+                    let supporter = supporters[k]
+                    supportersFalling = supportersFalling and (
+                        find(visited, supporter) != -1
+                    )
+
+                if supportersFalling:
+                    queue.push_back(supported)
+                    visited.push_back(supported)
+                    falling += 1
+
+        total += falling
+
+    return total
+
+
+fn main() raises:
+    fn parsePoint(point: String) raises -> Point:
+        let coords = point.split(",")
+
+        return Point(atol(coords[0]), atol(coords[1]), atol(coords[2]))
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        var bricks = DynamicVector[Brick]()
+
+        for i in range(0, len(lines)):
+            let line = lines[i]
+
+            if len(line) == 0:
+                continue
+
+            let split = line.split("~")
+
+            bricks.push_back(
+                Brick(len(bricks), parsePoint(split[0]), parsePoint(split[1]))
+            )
+
+        let collisionDatas = simulateGravity(bricks ^)
+
+        print(part1(collisionDatas))
+        print(part2(collisionDatas))
