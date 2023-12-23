@@ -1,0 +1,221 @@
+from collections.vector import DynamicVector
+from utils.static_tuple import StaticTuple
+from algorithm import max
+
+
+@value
+struct Pair[T: CollectionElement, U: CollectionElement](CollectionElement):
+    var a: T
+    var b: U
+
+
+@value
+@register_passable
+struct IntPair(CollectionElement):
+    var a: Int
+    var b: Int
+
+    fn __eq__(self, other: Self) -> Bool:
+        return self.a == other.a and self.b == other.b
+
+
+alias Point = IntPair
+alias Dir = IntPair
+alias Edge = IntPair
+
+alias dirs = StaticTuple[4, Dir](Dir(0, 1), Dir(0, -1), Dir(1, 0), Dir(-1, 0))
+
+
+fn find(v: DynamicVector[IntPair], elem: IntPair) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn erase(inout v: DynamicVector[IntPair], elem: IntPair):
+    var tmp = DynamicVector[IntPair]()
+
+    for i in range(0, len(v)):
+        if not v[i] == elem:
+            tmp.push_back(v[i])
+
+    v = tmp
+
+
+fn find(v: DynamicVector[Int], elem: Int) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn erase(inout v: DynamicVector[Int], elem: Int):
+    var tmp = DynamicVector[Int]()
+
+    for i in range(0, len(v)):
+        if not v[i] == elem:
+            tmp.push_back(v[i])
+
+    v = tmp
+
+
+fn stepInDir(map: DynamicVector[String], pos: Point, d: Dir) -> Point:
+    let nr = pos.a + d.a
+    let nc = pos.b + d.b
+
+    if nr < 0 or nr >= len(map) or nc < 0 or nc >= len(map[0]) or map[nr][nc] == "#":
+        return Point(-1, -1)
+
+    return Point(nr, nc)
+
+
+fn traverse(
+    map: DynamicVector[String],
+    pos: Point,
+    steps: Int,
+    inout visited: DynamicVector[Point],
+) -> Int:
+    if find(visited, pos) != -1:
+        return 0
+    visited.push_back(pos)
+
+    let r = pos.a
+    let c = pos.b
+    let cur = map[r][c]
+    var res = 0
+
+    if r == len(map) - 1:
+        res = steps
+    elif cur == ">":
+        res = traverse(map, IntPair(r, c + 1), steps + 1, visited)
+    elif cur == "^":
+        res = traverse(map, IntPair(r - 1, c), steps + 1, visited)
+    elif cur == "<":
+        res = traverse(map, IntPair(r, c - 1), steps + 1, visited)
+    elif cur == "v":
+        res = traverse(map, IntPair(r + 1, c), steps + 1, visited)
+    else:
+        for i in range(0, len(dirs)):
+            let np = stepInDir(map, pos, dirs[i])
+
+            if np.a == -1:
+                continue
+
+            res = max(res, traverse(map, np, steps + 1, visited))
+
+    erase(visited, pos)
+    return res
+
+
+fn part1(map: DynamicVector[String]) -> Int:
+    var visited = DynamicVector[Point]()
+    return traverse(map, Point(0, map[0].find(".")), 0, visited)
+
+
+fn traverse2(
+    map: DynamicVector[DynamicVector[Edge]],
+    pos: Int,
+    steps: Int,
+    inout visited: DynamicVector[Int],
+) -> Int:
+    if find(visited, pos) != -1:
+        return 0
+    visited.push_back(pos)
+
+    if pos == len(map) - 1:
+        erase(visited, pos)
+        return steps
+
+    var res = 0
+    for i in range(0, len(map[pos])):
+        let edge = map[pos][i]
+        res = max(res, traverse2(map, edge.a, steps + edge.b, visited))
+
+    erase(visited, pos)
+    return res
+
+
+fn part2(map: DynamicVector[String]) -> Int:
+    var pois = DynamicVector[Pair[Int, Point]]()
+
+    pois.push_back(Pair(len(pois), Point(0, map[0].find("."))))
+    for r in range(0, len(map)):
+        for c in range(0, len(map[0])):
+            if map[r][c] != ".":
+                continue
+
+            var roads = 0
+            for i in range(0, len(dirs)):
+                let np = stepInDir(map, Point(r, c), dirs[i])
+
+                if np.a == -1:
+                    continue
+
+                roads += 1
+
+            if roads > 2:
+                pois.push_back(Pair(len(pois), Point(r, c)))
+    pois.push_back(Pair(len(pois), Point(len(map) - 1, map[len(map) - 1].find("."))))
+
+    var edges = DynamicVector[DynamicVector[Edge]]()
+    edges.resize(len(pois), DynamicVector[Edge]())
+
+    for pi in range(0, len(pois)):
+        let pid = pois[pi].a
+        let p = pois[pi].b
+
+        var visited = DynamicVector[Point]()
+        var queue = DynamicVector[Pair[Int, Point]]()
+        var qFront = 0
+
+        queue.push_back(Pair(0, p))
+
+        while qFront < len(queue):
+            let data = queue[qFront]
+            qFront += 1
+
+            let s = data.a
+            let p = data.b
+
+            var pid2 = -1
+            for pi2 in range(0, len(pois)):
+                let poi2 = pois[pi2]
+
+                if poi2.a != pid and poi2.b == p:
+                    pid2 = poi2.a
+                    break
+
+            if pid2 != -1:
+                if find(edges[pid], IntPair(pid2, s)) == -1:
+                    edges[pid].push_back(IntPair(pid2, s))
+
+                if find(edges[pid2], IntPair(pid, s)) == -1:
+                    edges[pid2].push_back(IntPair(pid, s))
+                continue
+
+            if find(visited, p) != -1:
+                continue
+            visited.push_back(p)
+
+            for i in range(0, len(dirs)):
+                let np = stepInDir(map, p, dirs[i])
+
+                if np.a == -1:
+                    continue
+
+                queue.push_back(Pair(s + 1, np))
+
+    var visited2 = DynamicVector[Int]()
+    return traverse2(edges, 0, 0, visited2)
+
+
+fn main() raises:
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let map = input.split("\n")
+
+        print(part1(map))
+        print(part2(map))
