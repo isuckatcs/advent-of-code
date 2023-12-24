@@ -1,0 +1,127 @@
+from collections.vector import DynamicVector
+from math import round, abs
+
+alias epsilon = 1e-3
+alias Vec3 = SIMD[DType.int64, 4]
+
+
+@value
+@register_passable
+struct Hailstone(CollectionElement):
+    var pos: Vec3
+    var dir: Vec3
+
+
+fn intersect(h1: Hailstone, h2: Hailstone) -> SIMD[DType.float64, 2]:
+    let p1 = h1.pos.cast[DType.float64]()
+    let d1 = h1.dir.cast[DType.float64]()
+
+    let p2 = h2.pos.cast[DType.float64]()
+    let d2 = h2.dir.cast[DType.float64]()
+
+    let a = d1[1] / d1[0]
+    let c = p1[1] - a * p1[0]
+
+    let b = d2[1] / d2[0]
+    let d = p2[1] - b * p2[0]
+
+    if abs(a - b) < epsilon:
+        return SIMD[DType.float64, 2](-1, -1)
+
+    let x = (d - c) / (a - b)
+    let t1 = (x - p1[0]) / d1[0]
+    let t2 = (x - p2[0]) / d2[0]
+
+    if t1 < 0 or t2 < 0:
+        return SIMD[DType.float64, 2](-1, -1)
+
+    return SIMD[DType.float64, 2](t1, t2)
+
+
+fn part1(hailstones: DynamicVector[Hailstone]) -> Int:
+    let begin: Float64 = 200000000000000
+    let end: Float64 = 400000000000000
+
+    var cnt = 0
+    for i in range(0, len(hailstones)):
+        for j in range(i + 1, len(hailstones)):
+            let ts = intersect(hailstones[i], hailstones[j])
+            if ts[0] == -1:
+                continue
+
+            let p = hailstones[i].pos.cast[DType.float64]()
+            let d = hailstones[i].dir.cast[DType.float64]()
+            let np = p + ts[0] * d
+
+            if begin <= np[0] <= end and begin <= np[1] <= end:
+                cnt += 1
+    return cnt
+
+
+fn part2(hailstones: DynamicVector[Hailstone]) -> Int:
+    let n = 250
+
+    for x in range(-n, n + 1):
+        for y in range(-n, n + 1):
+            for z in range(-n, n + 1):
+                let cv = Vec3(x, y, z)
+
+                let p0 = hailstones[0].pos
+                let d0 = hailstones[0].dir - cv
+
+                let p1 = hailstones[1].pos
+                let d1 = hailstones[1].dir - cv
+
+                if d0[0] == 0 or d1[0] == 0:
+                    continue
+
+                let fts = intersect(Hailstone(p0, d0), Hailstone(p1, d1))
+                if fts[0] == -1:
+                    continue
+
+                if abs(round(fts[0]) - fts[0]) >= epsilon:
+                    continue
+
+                let ts = fts.cast[DType.int64]()
+                let intersection = p0 + ts[0] * d0
+
+                if intersection[3] != p1[3] + ts[1] * d1[3]:
+                    continue
+
+                var hit = True
+                for i in range(2, len(hailstones)):
+                    let cp = hailstones[i].pos
+                    let nd = hailstones[i].dir - cv
+
+                    let tt = (intersection[0] - cp[0]) / nd[0]
+                    hit = hit and intersection == cp + nd * tt
+
+                if hit:
+                    return intersection.reduce_add().to_int()
+
+    return 0
+
+
+fn main() raises:
+    fn parseVec3(point: String) raises -> Vec3:
+        let coords = point.split(", ")
+        return Vec3(atol(coords[0]), atol(coords[1]), atol(coords[2]))
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        var hailstones = DynamicVector[Hailstone]()
+
+        for i in range(0, len(lines)):
+            let line = lines[i]
+
+            if len(line) == 0:
+                continue
+
+            let split = line.split(" @ ")
+
+            hailstones.push_back(Hailstone(parseVec3(split[0]), parseVec3(split[1])))
+
+        print(part1(hailstones))
+        print(part2(hailstones))
