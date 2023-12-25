@@ -1,0 +1,178 @@
+from collections.vector import DynamicVector
+from random import random_ui64, seed
+
+
+@value
+struct StrMapData(CollectionElement):
+    var k: String
+    var v: DynamicVector[String]
+
+
+@value
+struct IntPair(CollectionElement):
+    var a: Int
+    var b: Int
+
+
+fn find(v: DynamicVector[StrMapData], elem: StrMapData) -> Int:
+    for i in range(0, len(v)):
+        if v[i].k == elem.k:
+            return i
+
+    return -1
+
+
+fn findOrInsert(inout v: DynamicVector[StrMapData], elem: StrMapData) -> Int:
+    let idx = find(v, elem)
+    if idx != -1:
+        return idx
+
+    v.push_back(elem)
+    return len(v) - 1
+
+
+fn find(v: DynamicVector[String], elem: String) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn findOrInsert(inout v: DynamicVector[String], elem: String) -> Int:
+    let idx = find(v, elem)
+    if idx != -1:
+        return idx
+
+    v.push_back(elem)
+    return len(v) - 1
+
+
+fn find(v: DynamicVector[Int], elem: Int) -> Int:
+    for i in range(0, len(v)):
+        if v[i] == elem:
+            return i
+
+    return -1
+
+
+fn findOrInsert(inout v: DynamicVector[Int], elem: Int) -> Int:
+    let idx = find(v, elem)
+    if idx != -1:
+        return idx
+
+    v.push_back(elem)
+    return len(v) - 1
+
+
+fn erase(inout v: DynamicVector[IntPair], idx: Int):
+    var tmp = DynamicVector[IntPair]()
+
+    for i in range(0, len(v)):
+        if i != idx:
+            tmp.push_back(v[i])
+
+    v = tmp
+
+
+fn erase(inout v: DynamicVector[DynamicVector[Int]], idx: Int):
+    var tmp = DynamicVector[DynamicVector[Int]]()
+
+    for i in range(0, len(v)):
+        if i != idx:
+            tmp.push_back(v[i])
+
+    v = tmp
+
+
+fn part1(map: DynamicVector[StrMapData]) -> Int:
+    var node2id = DynamicVector[String]()
+
+    for i in range(0, len(map)):
+        node2id.push_back(map[i].k)
+
+    var originalSubsets = DynamicVector[DynamicVector[Int]]()
+    var originalEdges = DynamicVector[IntPair]()
+
+    for i in range(0, len(map)):
+        originalSubsets.push_back(DynamicVector[Int]())
+        originalSubsets[len(originalSubsets) - 1].push_back(find(node2id, map[i].k))
+
+        for j in range(0, len(map[i].v)):
+            originalEdges.push_back(
+                IntPair(find(node2id, map[i].k), find(node2id, map[i].v[j]))
+            )
+
+    seed()
+    while True:
+        var subsets = originalSubsets
+        var edges = originalEdges
+
+        while len(subsets) > 2:
+            let n = random_ui64(0, len(edges) - 1).to_int()
+
+            let b = edges[n].a
+            let e = edges[n].b
+            erase(edges, n)
+
+            var s1 = -1
+            var s2 = -1
+
+            for i in range(0, len(subsets)):
+                if find(subsets[i], b) != -1:
+                    s1 = i
+                if find(subsets[i], e) != -1:
+                    s2 = i
+
+            if s1 == s2:
+                continue
+
+            for i in range(0, len(subsets[s2])):
+                _ = findOrInsert(subsets[s1], subsets[s2][i])
+            erase(subsets, s2)
+
+        var cuts = 0
+        for i in range(0, len(originalEdges)):
+            if (
+                find(subsets[0], originalEdges[i].a) != -1
+                and find(subsets[1], originalEdges[i].b) != -1
+            ):
+                cuts += 1
+
+        if cuts == 3:
+            return len(subsets[0]) * len(subsets[1])
+
+
+fn part2() -> Int:
+    return 0
+
+
+fn main() raises:
+    var map = DynamicVector[StrMapData]()
+
+    with open("/dev/stdin", "r") as stdin:
+        let input = stdin.read()
+        let lines = input.split("\n")
+
+        for i in range(0, len(lines)):
+            let line = lines[i]
+
+            if len(line) == 0:
+                continue
+
+            var split = line.split(": ")
+
+            let head = split[0]
+
+            split = split[1].split(" ")
+            for i in range(0, len(split)):
+                let dst = split[i]
+
+                let hi = findOrInsert(map, StrMapData(head, DynamicVector[String]()))
+                map[hi].v.push_back(dst)
+
+                let ci = findOrInsert(map, StrMapData(dst, DynamicVector[String]()))
+                map[ci].v.push_back(head)
+
+        print(part1(map ^))
+        print(part2())
