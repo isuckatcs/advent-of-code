@@ -3,6 +3,9 @@
 **/.idea
 **/out
 
+**/bin
+**/obj
+
 *.out
 *.exe
 *.txt
