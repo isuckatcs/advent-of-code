@@ -1,5 +1,5 @@
 # Advent of Code
-Advent of Code Solutions in C++, Rust, Java, Kotlin, Swift, Go, Ruby, C# and Mojo 🔥
+Advent of Code Solutions in C++, Rust, Java, Kotlin, Swift, Go, Ruby, C#, Dart and Mojo 🔥
 
 |Year| Language |
 |--|--|
@@ -10,3 +10,4 @@ Advent of Code Solutions in C++, Rust, Java, Kotlin, Swift, Go, Ruby, C# and Moj
 | 2022 | Swift |
 | 2023 | C++, Rust, Mojo 🔥 |
 | 2024 | Ruby |
+| 2025 | Dart |
